@@ -6,7 +6,7 @@ const authRoutes = require('./routes/authRoutes');
 const roomRoutes = require('./routes/roomRoutes');
 const userRoutes = require('./routes/userRoutes');
 const reservationRoutes = require('./routes/reservationRoutes');
-
+const authMiddleware = require('./middlewares/authMiddleware');
 
 const app = express();
 
@@ -17,8 +17,16 @@ app.use(express.json());
 // Rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
-app.use('/api/users', userRoutes);  
-app.use('/api/reservations', reservationRoutes);  
+app.use('/api/users', userRoutes);
+app.use('/api/reservations', reservationRoutes);
+
+// Ruta protegida para pruebas con Postman
+app.get('/api/protegida', authMiddleware, (req, res) => {
+  res.json({
+    message: 'Accediste a una ruta protegida',
+    user: req.user,
+  });
+});
 
 // Conexión a la base de datos
 const db = mysql.createConnection({

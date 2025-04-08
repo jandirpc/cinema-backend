@@ -1,18 +1,10 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const mysql = require('mysql2');
 const router = express.Router();
+const db = require('../config/db');
 
-// Configuración de la base de datos
-const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
-});
-
-// Ruta para crear una nueva cuenta
+// Registro de usuario
 router.post('/register', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -21,7 +13,7 @@ router.post('/register', (req, res) => {
 
   const hashedPassword = bcrypt.hashSync(password, 8);
   const query = 'INSERT INTO users (username, password) VALUES (?, ?)';
-  db.execute(query, [username, hashedPassword], (err, results) => {
+  db.execute(query, [username, hashedPassword], (err) => {
     if (err) {
       console.error('Error al registrar el usuario:', err);
       return res.status(500).json({ message: 'Error al registrar el usuario.' });
@@ -30,7 +22,7 @@ router.post('/register', (req, res) => {
   });
 });
 
-// Ruta para iniciar sesión
+// Inicio de sesión
 router.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
