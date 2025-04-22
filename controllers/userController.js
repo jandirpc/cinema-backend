@@ -67,10 +67,33 @@ const deleteUser = (req, res) => {
   });
 };
 
+const updateUserPassword = (req, res) => {
+  const { username } = req.params;
+  const { newPassword } = req.body;
+
+  if (!newPassword) {
+    return res.status(400).json({ message: 'La nueva contraseña es requerida.' });
+  }
+
+  const hashedPassword = bcrypt.hashSync(newPassword, 8);
+
+  userModel.updateUserPassword(username, hashedPassword, (err, result) => {
+    if (err) {
+      console.error('Error al actualizar contraseña:', err);
+      return res.status(500).json({ message: 'Error al actualizar contraseña.' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Usuario no encontrado.' });
+    }
+    res.status(200).json({ message: 'Contraseña actualizada exitosamente.' });
+  });
+};
+
 module.exports = {
   createUser,
   getAllUsers,
   getUserById,
   updateUser,
   deleteUser,
+  updateUserPassword
 };

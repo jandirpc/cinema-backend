@@ -24,10 +24,19 @@ const deleteUser = (id, callback) => {
   db.execute('DELETE FROM users WHERE id = ?', [id], callback);
 };
 
+const updateUserPassword = (username, hashedPassword, callback) => {
+  const query = 'UPDATE users SET password = ? WHERE username = ?';
+  db.execute(query, [hashedPassword, username], (err, result) => {
+    if (err) return callback(err);
+    callback(null, result);
+  });
+};
+
 module.exports = {
   createUser,
   getAllUsers,
   getUserById,
   updateUser,
   deleteUser,
+  updateUserPassword
 };
