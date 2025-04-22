@@ -1,84 +1,116 @@
 const reservationModel = require('../models/reservation');
-const roomModel = require('../models/room'); 
+const roomModel = require('../models/room');
 
-// Crear una nueva reservación
+// Crear nueva reservación
 const createReservation = (req, res) => {
-  const { user_id, room_id, seat_row, seat_column, reservation_date, status } = req.body;
+  const { user_id, room_id, seat_row, seat_column, reservation_date } = req.body;
 
-  // Validar que las filas y columnas no excedan los límites de la sala
-  roomModel.getRoomById(room_id, (err, result) => {
-    if (err) {
-      console.error('Error al obtener la sala:', err);
-      return res.status(500).json({ message: 'Error al obtener la sala.' });
-    }
+  if (!user_id || !room_id || !seat_row || !seat_column || !reservation_date) {
+      return res.status(400).json({ message: 'Todos los campos son requeridos.' });
+  }
 
-    // Si no existe la sala
-    if (result.length === 0) {
-      return res.status(404).json({ message: 'Sala no encontrada.' });
-    }
+  roomModel.getRoomById(room_id, (err, roomResults) => {
+      if (err) return res.status(500).json({ message: 'Error al verificar sala.' });
+      if (roomResults.length === 0) return res.status(404).json({ message: 'Sala no encontrada.' });
 
-    // Obtener los valores de num_rows y num_columns de la sala
-    const { num_rows, num_columns } = result[0];
+      const { num_rows, num_columns } = roomResults[0];
 
-    // Verificar que las filas y columnas no excedan los límites
-    if (seat_row > num_rows || seat_column > num_columns) {
-      return res.status(400).json({ message: `Las filas no pueden exceder ${num_rows} y las columnas no pueden exceder ${num_columns}.` });
-    }
-
-    // Obtener la fecha actual
-    const currentDate = new Date();
-    
-    // Convertir la fecha de la reserva a un objeto Date
-    const reservationDate = new Date(reservation_date);
-    
-    // Calcular la fecha máxima permitida (8 días a partir de la fecha actual)
-    const maxDate = new Date(currentDate);
-    maxDate.setDate(currentDate.getDate() + 8); // Sumar 8 días a la fecha actual
-
-    // Verificar si la fecha de la reservación es mayor a la fecha máxima
-    if (reservationDate > maxDate) {
-      return res.status(400).json({ message: 'La fecha de la reserva no puede ser más de 8 días a partir de la fecha actual.' });
-    }
-
-    // Validación para asegurarse de que el asiento no esté reservado
-    reservationModel.checkSeatAvailability(room_id, seat_row, seat_column, (err, result) => {
-      if (err) {
-        console.error('Error al verificar la disponibilidad del asiento:', err);
-        return res.status(500).json({ message: 'Error al verificar la disponibilidad del asiento.' });
+      if (seat_row > num_rows || seat_column > num_columns) {
+          return res.status(400).json({ 
+              message: `Asiento inválido. Límites: ${num_rows} filas × ${num_columns} columnas.` 
+          });
       }
 
-      // Si ya hay una reserva en ese asiento, retornar error
-      if (result.length > 0) {
-        return res.status(400).json({ message: 'Este asiento ya está reservado.' });
+      const currentDate = new Date();
+      const reservationDate = new Date(reservation_date);
+      const maxDate = new Date(currentDate);
+      maxDate.setDate(currentDate.getDate() + 8);
+      
+      if (reservationDate > maxDate) {
+          return res.status(400).json({ 
+              message: 'Solo puedes reservar hasta 8 días en adelante.' 
+          });
       }
 
-      // Lógica para crear la reserva si la fila y columna están disponibles
-      const newReservation = { user_id, room_id, seat_row, seat_column, reservation_date, status };
+      reservationModel.checkSeatAvailability(room_id, seat_row, seat_column, reservation_date, (err, reservationResults) => {
+          if (err) return res.status(500).json({ message: 'Error al verificar disponibilidad.' });
+          if (reservationResults.length > 0) {
+              return res.status(400).json({ 
+                  message: 'Este asiento ya está reservado para este horario.' 
+              });
+          }
 
-      reservationModel.createReservation(newReservation, (err, result) => {
-        if (err) {
-          console.error('Error al crear la reserva:', err);
-          return res.status(500).json({ message: 'Error al crear la reserva.' });
-        }
-        res.status(201).json({ message: 'Reserva creada exitosamente.' });
+          const newReservation = { 
+              user_id, 
+              room_id, 
+              seat_row, 
+              seat_column, 
+              reservation_date, 
+              status: 'reserved' 
+          };
+          
+          reservationModel.createReservation(newReservation, (err, result) => {
+              if (err) {
+                  console.error('Error DB:', err);
+                  if (err.code === 'ER_DUP_ENTRY') {
+                      return res.status(400).json({ 
+                          message: 'El asiento ya está reservado.' 
+                      });
+                  }
+                  return res.status(500).json({ message: 'Error al crear reserva.' });
+              }
+
+              res.status(201).json({ 
+                  message: 'Reserva creada exitosamente.',
+                  reservation_id: result.insertId,
+                  datetime: `${reservation_date} ${roomResults[0].hour}`
+              });
+          });
       });
-    });
   });
 };
 
-  
-// Obtener todas las reservaciones
+// Obtener reservaciones con filtros
 const getAllReservations = (req, res) => {
-  reservationModel.getAllReservations((err, result) => {
-    if (err) {
-      console.error('Error al obtener reservaciones:', err);
-      return res.status(500).json({ message: 'Error al obtener reservaciones.' });
-    }
-    res.status(200).json(result);
-  });
+  const { room_id, date } = req.query;
+
+  if (!room_id && !date) {
+    reservationModel.getAllReservations((err, result) => {
+      if (err) {
+        console.error('Error al obtener reservaciones:', err);
+        return res.status(500).json({ message: 'Error al obtener reservaciones.' });
+      }
+      res.status(200).json(result);
+    });
+    return;
+  }
+
+  if (room_id && !date) {
+    reservationModel.getReservationsByRoom(room_id, (err, results) => {
+      if (err) {
+        console.error('Error al obtener reservaciones:', err);
+        return res.status(500).json({ message: 'Error al obtener reservaciones.' });
+      }
+      res.status(200).json(results);
+    });
+    return;
+  }
+
+  if (room_id && date) {
+    reservationModel.getReservationsByRoomAndDate(room_id, date, (err, results) => {
+      if (err) {
+        console.error('Error al obtener reservaciones:', err);
+        return res.status(500).json({ message: 'Error al obtener reservaciones.' });
+      }
+      res.status(200).json(results);
+    });
+    return;
+  }
+
+  res.status(400).json({ message: 'Debe proporcionar room_id para filtrar por fecha.' });
 };
 
-// Obtener una reservación por ID
+// Obtener reserva por ID
 const getReservationById = (req, res) => {
   const { id } = req.params;
 
@@ -94,7 +126,7 @@ const getReservationById = (req, res) => {
   });
 };
 
-// Actualizar una reservación
+// Actualizar reserva
 const updateReservation = (req, res) => {
   const { id } = req.params;
   const { user_id, room_id, seat_row, seat_column, reservation_date, status } = req.body;
@@ -108,16 +140,26 @@ const updateReservation = (req, res) => {
   reservationModel.updateReservation(id, updatedReservation, (err, result) => {
     if (err) {
       console.error('Error al actualizar reservación:', err);
+      
+      if (err.code === 'ER_DUP_ENTRY') {
+        return res.status(400).json({ message: 'Conflicto: El asiento ya está reservado para este horario.' });
+      }
+      
       return res.status(500).json({ message: 'Error al actualizar reservación.' });
     }
+    
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Reservación no encontrada.' });
     }
-    res.status(200).json({ message: 'Reservación actualizada exitosamente.' });
+    
+    res.status(200).json({ 
+      message: 'Reservación actualizada exitosamente.',
+      changes: result.affectedRows
+    });
   });
 };
 
-// Eliminar una reservación
+// Eliminar reserva
 const deleteReservation = (req, res) => {
   const { id } = req.params;
 
@@ -138,5 +180,5 @@ module.exports = {
   getAllReservations,
   getReservationById,
   updateReservation,
-  deleteReservation,
+  deleteReservation
 };

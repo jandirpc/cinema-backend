@@ -1,9 +1,9 @@
 const db = require('../config/db');
 
 const createUser = (user, callback) => {
-  const { username, password, role, status } = user;
-  const query = 'INSERT INTO users (username, password, role, status) VALUES (?, ?, ?, ?)';
-  db.execute(query, [username, password, role, status], callback);
+  const { username, email, password, role, status } = user;
+  const query = 'INSERT INTO users (username, email, password, role, status) VALUES (?, ?, ?, ?, ?)';
+  db.execute(query, [username, email, password, role, status], callback);
 };
 
 const getAllUsers = (callback) => {
@@ -15,9 +15,9 @@ const getUserById = (id, callback) => {
 };
 
 const updateUser = (id, user, callback) => {
-  const { username, password, role, status } = user;
-  const query = 'UPDATE users SET username = ?, password = ?, role = ?, status = ? WHERE id = ?';
-  db.execute(query, [username, password, role, status, id], callback);
+  const { username, email, password, role, status } = user;
+  const query = 'UPDATE users SET username = ?, email = ?, password = ?, role = ?, status = ? WHERE id = ?';
+  db.execute(query, [username, email, password, role, status, id], callback);
 };
 
 const deleteUser = (id, callback) => {

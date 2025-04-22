@@ -2,7 +2,7 @@ const userModel = require('../models/user');
 const bcrypt = require('bcryptjs');
 
 const createUser = (req, res) => {
-  const { username, password, role, status } = req.body;
+  const { username, email, password, role, status } = req.body;
   if (!username || !password) {
     return res.status(400).json({ message: 'El nombre de usuario y la contraseña son requeridos.' });
   }
@@ -10,6 +10,7 @@ const createUser = (req, res) => {
   const hashedPassword = bcrypt.hashSync(password, 8);
   const newUser = { 
     username, 
+    email,
     password: hashedPassword, 
     role: role || 'client', 
     status: status || 'active'
@@ -42,13 +43,13 @@ const getUserById = (req, res) => {
 
 const updateUser = (req, res) => {
   const { id } = req.params;
-  const { username, password, role, status } = req.body;
+  const { username, email, password, role, status } = req.body;
   if (!username || !password) {
     return res.status(400).json({ message: 'El nombre de usuario y la contraseña son requeridos.' });
   }
 
   const hashedPassword = bcrypt.hashSync(password, 8);
-  const updatedUser = { username, password: hashedPassword, role: role || 'client', status };
+  const updatedUser = { username, email, password: hashedPassword, role: role || 'client', status };
 
   userModel.updateUser(id, updatedUser, (err, result) => {
     if (err) return res.status(500).json({ message: 'Error al actualizar usuario.' });

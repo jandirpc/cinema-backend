@@ -4,16 +4,15 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 const db = require('../config/db');
 
-// Registro de usuario
 router.post('/register', (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ message: 'Usuario y contraseña son requeridos.' });
+  const { username, email, password } = req.body;
+  if (!username || !password || !email) {
+    return res.status(400).json({ message: 'Usuario, email y contraseña son requeridos.' });
   }
 
   const hashedPassword = bcrypt.hashSync(password, 8);
-  const query = 'INSERT INTO users (username, password) VALUES (?, ?)';
-  db.execute(query, [username, hashedPassword], (err) => {
+  const query = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
+  db.execute(query, [username, email, hashedPassword], (err) => {
     if (err) {
       console.error('Error al registrar el usuario:', err);
       return res.status(500).json({ message: 'Error al registrar el usuario.' });
@@ -22,7 +21,6 @@ router.post('/register', (req, res) => {
   });
 });
 
-// Inicio de sesión
 router.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {

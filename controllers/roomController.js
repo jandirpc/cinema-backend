@@ -2,14 +2,14 @@ const roomModel = require('../models/room');
 
 // Crear una nueva sala
 const createRoom = (req, res) => {
-  const { name, movie_name, movie_poster_url, num_rows, num_columns, schedule, price, duration, genre } = req.body;
+  const { name, movie_name, movie_poster_url, num_rows, num_columns, price, duration, genre, hour } = req.body;
 
   // Validación de los campos
-  if (!name || !movie_name || !num_rows || !num_columns || !schedule || !price || !duration || !genre) {
+  if (!name || !movie_name || !num_rows || !num_columns || !price || !duration || !genre || !hour) {
     return res.status(400).json({ message: 'Todos los campos son requeridos.' });
   }
 
-  const newRoom = { name, movie_name, movie_poster_url, num_rows, num_columns, schedule, price, duration, genre };
+  const newRoom = { name, movie_name, movie_poster_url, num_rows, num_columns, price, duration, genre, hour };
 
   roomModel.createRoom(newRoom, (err, result) => {
     if (err) {
@@ -50,14 +50,14 @@ const getRoomById = (req, res) => {
 // Actualizar una sala
 const updateRoom = (req, res) => {
   const { id } = req.params;
-  const { name, movie_name, movie_poster_url, num_rows, num_columns, schedule, price, duration, genre } = req.body;
+  const { name, movie_name, movie_poster_url, num_rows, num_columns, price, duration, genre, hour } = req.body;
 
   // Validación de los campos
-  if (!name || !movie_name || !num_rows || !num_columns || !schedule || !price || !duration || !genre) {
+  if (!name || !movie_name || !num_rows || !num_columns || !price || !duration || !genre || !hour) {
     return res.status(400).json({ message: 'Todos los campos son requeridos.' });
   }
 
-  const updatedRoom = { name, movie_name, movie_poster_url, num_rows, num_columns, schedule, price, duration, genre };
+  const updatedRoom = { name, movie_name, movie_poster_url, num_rows, num_columns, price, duration, genre, hour };
 
   roomModel.updateRoom(id, updatedRoom, (err, result) => {
     if (err) {
