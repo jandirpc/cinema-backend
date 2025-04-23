@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 const db = require('../config/db');
 
+// Registrar nuevo usuario
 router.post('/register', (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !password || !email) {
@@ -21,6 +22,7 @@ router.post('/register', (req, res) => {
   });
 });
 
+// Iniciar sesión
 router.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -43,8 +45,58 @@ router.post('/login', (req, res) => {
       return res.status(401).json({ message: 'Usuario o contraseña incorrectos.' });
     }
 
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.status(200).json({ message: 'Inicio de sesión exitoso.', token });
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        username: user.username,
+        role: user.role 
+      }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '1h' }
+    );
+    
+    res.status(200).json({ 
+      message: 'Inicio de sesión exitoso.', 
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role
+      }
+    });
+  });
+});
+
+// Verificar token
+router.get('/verify-token', (req, res) => {
+  const token = req.headers['authorization']?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ 
+      valid: false, 
+      error: 'Token no proporcionado' 
+    });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ 
+        valid: false, 
+        error: 'Token inválido o expirado',
+        details: err.message 
+      });
+    }
+
+    // Token válido
+    res.status(200).json({ 
+      valid: true,
+      user: {
+        id: decoded.id,
+        username: decoded.username,
+        role: decoded.role,
+        exp: decoded.exp
+      }
+    });
   });
 });
 
