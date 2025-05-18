@@ -30,10 +30,11 @@ app.get('/api/protegida', authMiddleware, (req, res) => {
 
 // Conexión a la base de datos
 const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
+    host: process.env.MYSQLHOST,
+    user: process.env.MYSQLUSER,
+    port: process.env.MYSQLPORT,
+    password: process.env.MYSQLPASSWORD,
+    database: process.env.MYSQLDATABASE
 });
 
 db.connect(err => {
@@ -45,7 +46,7 @@ db.connect(err => {
 });
 
 // Puerto de escucha
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
